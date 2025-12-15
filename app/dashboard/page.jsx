@@ -3,31 +3,32 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getTransactions } from "@/lib/firestore";
-import SummaryCard from "@/components/SummaryCard";
 import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
-  ResponsiveContainer,
   Legend,
-  Tooltip,
+  LineChart,
+  Line,
 } from "recharts";
-import { usePathname } from "next/navigation";
 
-const CATEGORIES = ["Food", "Rent", "Travel", "Shopping", "Bills", "Other"];
-const COLORS = [
-  "#3B82F6",
-  "#10B981",
-  "#F59E0B",
-  "#EF4444",
-  "#8B5CF6",
-  "#EC4899",
-];
+// Custom colors specifically for the Report Overview pie chart
+const PIE_COLORS = {
+  Income: "#3B82F6",    // Blue-500
+  Expense: "#EF4444",   // Red-500
+  Savings: "#10B981",   // Green-500
+};
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
 
   const [income, setIncome] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -48,17 +49,17 @@ export default function Dashboard() {
       };
       fetchData();
     }
-  }, [user, pathname]);
+  }, [user]);
 
   const filteredExpenses = expenses.filter((e) => {
-    const date = e.date;
+    const date = e.date.toDate ? e.date.toDate() : e.date;
     return (
       date.getMonth() === selectedMonth && date.getFullYear() === selectedYear
     );
   });
 
   const filteredIncome = income.filter((i) => {
-    const date = i.date;
+    const date = i.date.toDate ? i.date.toDate() : i.date;
     return (
       date.getMonth() === selectedMonth && date.getFullYear() === selectedYear
     );
@@ -66,14 +67,53 @@ export default function Dashboard() {
 
   const totalIncome = filteredIncome.reduce((sum, i) => sum + i.amount, 0);
   const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const balance = totalIncome - totalExpenses;
+  const totalSavings = totalIncome - totalExpenses;
 
-  const categoryData = CATEGORIES.map((cat) => ({
-    category: cat,
-    amount: filteredExpenses
-      .filter((e) => e.category === cat)
-      .reduce((sum, e) => sum + e.amount, 0),
-  })).filter((item) => item.amount > 0);
+  // Top expense sources by category
+  const categoryMap = {};
+  filteredExpenses.forEach((e) => {
+    const cat = e.category || "Other";
+    categoryMap[cat] = (categoryMap[cat] || 0) + e.amount;
+  });
+
+  const topCategories = Object.entries(categoryMap)
+    .map(([category, amount]) => ({ category, amount }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 9);
+
+  // Pie chart data with assigned colors
+  const pieData = [
+    { name: "Income", value: totalIncome, percentage: 100 },
+    {
+      name: "Expense",
+      value: totalExpenses,
+      percentage: totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0,
+    },
+    {
+      name: "Savings",
+      value: totalSavings > 0 ? totalSavings : 0,
+      percentage: totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0,
+    },
+  ].filter((item) => item.value > 0);
+
+  // === REAL DAILY EXPENSE DATA ===
+  const dailyExpenseMap = {};
+  filteredExpenses.forEach((expense) => {
+    const date = expense.date.toDate ? expense.date.toDate() : expense.date;
+    const day = date.getDate();
+    const key = `Day ${day}`;
+    dailyExpenseMap[key] = (dailyExpenseMap[key] || 0) + expense.amount;
+  });
+
+  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+  const dailyExpenses = Array.from({ length: daysInMonth }, (_, i) => {
+    const dayNum = i + 1;
+    const key = `Day ${dayNum}`;
+    return {
+      day: `${new Date(selectedYear, selectedMonth, dayNum).toLocaleString("default", { month: "short" })} ${dayNum}`,
+      amount: dailyExpenseMap[key] || 0,
+    };
+  });
 
   if (loading || !user) {
     return (
@@ -86,124 +126,161 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-10 min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-10 text-center">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2">
-            Expense Dashboard
-          </h1>
-          <p className="text-lg text-gray-600">Track your finances with ease</p>
-        </div>
-
-        {/* Month Selector */}
-        <div className="flex justify-center mb-10">
-          <div className="bg-white rounded-2xl shadow-lg px-6 py-4 border border-gray-200">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Select Month
-            </label>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              className="text-lg font-medium px-5 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-4 focus:ring-blue-300 bg-gray-50 cursor-pointer transition"
-            >
-              {Array.from({ length: 12 }, (_, i) => (
-                <option key={i} value={i}>
-                  {new Date(0, i).toLocaleString("default", { month: "long" })}{" "}
-                  {selectedYear}
-                </option>
-              ))}
-            </select>
+    <div className="p-6 lg:p-10 ml-28 min-h-screen bg-gray-50 w-full">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 text-sm">Total Income</p>
+              <p className="text-3xl font-bold text-gray-900">
+                ₹{totalIncome.toLocaleString("en-IN")}
+              </p>
+            </div>
+          
           </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          <div className="transform hover:scale-105 transition duration-300">
-            <SummaryCard
-              title="Total Income"
-              amount={totalIncome}
-              color="green"
-              icon="💰"
-            />
-          </div>
-          <div className="transform hover:scale-105 transition duration-300">
-            <SummaryCard
-              title="Total Expenses"
-              amount={totalExpenses}
-              color="red"
-              icon="🛒"
-            />
-          </div>
-          <div className="transform hover:scale-105 transition duration-300">
-            <SummaryCard
-              title="Current Balance"
-              amount={balance}
-              color={balance >= 0 ? "blue" : "red"}
-              icon={balance >= 0 ? "💎" : "⚠️"}
-            />
+        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-red-100 text-sm">Total Expense</p>
+              <p className="text-3xl font-bold">
+                ₹{totalExpenses.toLocaleString("en-IN")}
+              </p>
+            </div>
+           
           </div>
         </div>
 
-        {/* Pie Chart Section */}
-        {categoryData.length > 0 ? (
-          <div className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100">
-            <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">
-              Expenses by Category
-            </h2>
-            <ResponsiveContainer width="100%" height={450}>
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  dataKey="amount"
-                  nameKey="category"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={140}
-                  innerRadius={60}
-                  paddingAngle={5}
-                  label={({ amount }) => `₹${amount.toLocaleString()}`}
-                  labelLine={false}
-                >
-                  {categoryData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                      stroke="#fff"
-                      strokeWidth={3}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value) => `₹${Number(value).toLocaleString()}`}
-                  contentStyle={{
-                    backgroundColor: "#f8fafc",
-                    border: "none",
-                    borderRadius: "12px",
-                    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-                  }}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  height={50}
-                  iconType="circle"
-                  formatter={(value) => (
-                    <span className="text-lg font-medium">{value}</span>
-                  )}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 text-sm">Total Savings</p>
+              <p className="text-3xl font-bold text-gray-900">
+                ₹{totalSavings.toLocaleString("en-IN")}
+              </p>
+            </div>
+          
           </div>
-        ) : (
-          <div className="text-center py-20 bg-white rounded-3xl shadow-lg">
-            <p className="text-2xl text-gray-500 font-medium">
-              No expenses recorded for this month yet.
-            </p>
-            <p className="mt-4 text-lg text-gray-400">
-              Start adding expenses to see beautiful insights!
-            </p>
-          </div>
-        )}
+        </div>
+      </div>
+
+      {/* Month Selector */}
+      <div className="flex justify-end mb-8">
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(Number(e.target.value))}
+          className="bg-white rounded-xl shadow px-6 py-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          {Array.from({ length: 12 }, (_, i) => (
+            <option key={i} value={i}>
+              {new Date(0, i).toLocaleString("default", { month: "long" })}{" "}
+              {selectedYear}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Top Expense Sources - Vertical Bars */}
+      <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-200">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+          Top Expense Sources
+        </h2>
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart data={topCategories}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="category"
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              tick={{ fontSize: 12 }}
+            />
+            <YAxis
+              tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+            />
+            <Tooltip
+              formatter={(value) => `₹${Number(value).toLocaleString("en-IN")}`}
+              labelStyle={{ fontWeight: "bold" }}
+            />
+            <Bar dataKey="amount" fill="#10B981" radius={[8, 8, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Bottom Section: Pie + Line */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Report Overview Pie Chart - Now with DISTINCT COLORS */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">
+            Report Overview
+          </h2>
+          <ResponsiveContainer width="100%" height={400}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={80}
+                outerRadius={140}
+                paddingAngle={5}
+                label={({ percentage }) => `${percentage.toFixed(0)}%`}
+              >
+                {pieData.map((entry) => (
+                  <Cell
+                    key={entry.name}
+                    fill={PIE_COLORS[entry.name]}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value) =>
+                  `₹${Number(value).toLocaleString("en-IN")}`
+                }
+              />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Expense Activity Line Chart */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">
+            Expense Activity
+          </h2>
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={dailyExpenses}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="day"
+                angle={-45}
+                textAnchor="end"
+                height={60}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                tickFormatter={(value) => `₹${value.toLocaleString("en-IN")}`}
+              />
+              <Tooltip
+                formatter={(value) =>
+                  `₹${Number(value).toLocaleString("en-IN")}`
+                }
+                labelFormatter={(label) => `Date: ${label}`}
+              />
+              <Line
+                type="monotone"
+                dataKey="amount"
+                stroke="#10B981"
+                strokeWidth={3}
+                dot={{ fill: "#10B981", r: 5 }}
+                activeDot={{ r: 7 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

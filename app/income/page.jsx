@@ -39,7 +39,7 @@ export default function IncomePage() {
   const isSuccess = message && !message.includes("Error");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
+    <div className="min-h-screen ml-36 bg-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Main Card */}
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-10 border border-white/50">
@@ -97,7 +97,7 @@ export default function IncomePage() {
             <button
               type="submit"
               disabled={loading || !amount}
-              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold text-xl py-5 rounded-2xl shadow-lg hover:shadow-xl hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center"
+              className="w-full bg-green-600  text-white font-bold text-xl py-5 rounded-2xl shadow-lg hover:shadow-xl hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center"
             >
               {loading ? (
                 <>
