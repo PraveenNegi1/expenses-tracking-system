@@ -126,7 +126,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 lg:p-10 ml-28 min-h-screen bg-gray-50 w-full">
+    <div className="p-6 lg:p-10 md:ml-28 min-h-screen bg-gray-50 w-full">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
