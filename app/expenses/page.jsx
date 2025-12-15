@@ -162,7 +162,7 @@ export default function ExpensesPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen ml-32 bg-amber-100 w-full py-8 px-4">
+    <div className="min-h-screen md:ml-32 bg-amber-100 w-full py-8 px-4">
       <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-10">
         {/* Add Expense Form */}
         <div className="w-full">

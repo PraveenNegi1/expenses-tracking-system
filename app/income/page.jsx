@@ -39,7 +39,7 @@ export default function IncomePage() {
   const isSuccess = message && !message.includes("Error");
 
   return (
-    <div className="min-h-screen ml-36 bg-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
+    <div className="min-h-screen md:ml-36 bg-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Main Card */}
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-10 border border-white/50">
