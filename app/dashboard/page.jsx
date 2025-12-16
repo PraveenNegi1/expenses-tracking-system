@@ -14,16 +14,8 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
-  LineChart,
-  Line,
 } from "recharts";
-
-const PIE_COLORS = {
-  Income: "#3B82F6", // Blue
-  Expense: "#EF4444", // Red
-  Savings: "#10B981", // Emerald Green
-};
+import Sidebar from "@/components/Navbar";
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
@@ -33,6 +25,7 @@ export default function Dashboard() {
   const [expenses, setExpenses] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear] = useState(new Date().getFullYear());
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
@@ -50,13 +43,6 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  const filteredExpenses = expenses.filter((e) => {
-    const date = e.date.toDate ? e.date.toDate() : e.date;
-    return (
-      date.getMonth() === selectedMonth && date.getFullYear() === selectedYear
-    );
-  });
-
   const filteredIncome = income.filter((i) => {
     const date = i.date.toDate ? i.date.toDate() : i.date;
     return (
@@ -64,9 +50,17 @@ export default function Dashboard() {
     );
   });
 
+  const filteredExpenses = expenses.filter((e) => {
+    const date = e.date.toDate ? e.date.toDate() : e.date;
+    return (
+      date.getMonth() === selectedMonth && date.getFullYear() === selectedYear
+    );
+  });
+
   const totalIncome = filteredIncome.reduce((sum, i) => sum + i.amount, 0);
   const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const totalSavings = totalIncome - totalExpenses;
+  const totalBalance = totalIncome - totalExpenses;
+  const totalSavings = totalBalance > 0 ? totalBalance : 0;
 
   const categoryMap = {};
   filteredExpenses.forEach((e) => {
@@ -74,45 +68,78 @@ export default function Dashboard() {
     categoryMap[cat] = (categoryMap[cat] || 0) + e.amount;
   });
 
-  const topCategories = Object.entries(categoryMap)
-    .map(([category, amount]) => ({ category, amount }))
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 9);
+  const budgetData = Object.entries(categoryMap).map(([name, value]) => ({
+    name,
+    value,
+  }));
 
-  const pieData = [
-    { name: "Income", value: totalIncome, percentage: 100 },
-    {
-      name: "Expense",
-      value: totalExpenses,
-      percentage: totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0,
-    },
-    {
-      name: "Savings",
-      value: totalSavings > 0 ? totalSavings : 0,
-      percentage: totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0,
-    },
-  ].filter((item) => item.value > 0);
+  const COLORS = [
+    "#8B5CF6",
+    "#EC4899",
+    "#10B981",
+    "#F59E0B",
+    "#3B82F6",
+    "#EF4444",
+  ];
 
-  const dailyExpenseMap = {};
-  filteredExpenses.forEach((expense) => {
-    const date = expense.date.toDate ? expense.date.toDate() : expense.date;
-    const day = date.getDate();
-    const key = `Day ${day}`;
-    dailyExpenseMap[key] = (dailyExpenseMap[key] || 0) + expense.amount;
+  const getMoneyFlowData = () => {
+    const data = [];
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(selectedYear, selectedMonth - i, 1);
+      const monthShort = date.toLocaleString("default", { month: "short" });
+
+      const monthIncome = income
+        .filter((t) => {
+          const d = t.date.toDate ? t.date.toDate() : t.date;
+          return (
+            d.getMonth() === date.getMonth() &&
+            d.getFullYear() === date.getFullYear()
+          );
+        })
+        .reduce((s, t) => s + t.amount, 0);
+
+      const monthExpenses = expenses
+        .filter((t) => {
+          const d = t.date.toDate ? t.date.toDate() : t.date;
+          return (
+            d.getMonth() === date.getMonth() &&
+            d.getFullYear() === date.getFullYear()
+          );
+        })
+        .reduce((s, t) => s + t.amount, 0);
+
+      data.push({
+        month: monthShort,
+        Income: monthIncome,
+        Expense: monthExpenses,
+      });
+    }
+    return data;
+  };
+
+  const moneyFlowData = getMoneyFlowData();
+
+  const allTransactions = [
+    ...filteredIncome.map((t) => ({
+      ...t,
+      type: "income",
+      description: "Income Added",
+    })),
+    ...filteredExpenses.map((t) => ({
+      ...t,
+      type: "expense",
+      description: t.title || "Expense",
+    })),
+  ];
+
+  allTransactions.sort((a, b) => {
+    const dateA = a.date.toDate ? a.date.toDate() : a.date;
+    const dateB = b.date.toDate ? b.date.toDate() : b.date;
+    return dateB - dateA;
   });
 
-  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-  const dailyExpenses = Array.from({ length: daysInMonth }, (_, i) => {
-    const dayNum = i + 1;
-    const key = `Day ${dayNum}`;
-    return {
-      day: `${new Date(selectedYear, selectedMonth, dayNum).toLocaleString(
-        "default",
-        { month: "short" }
-      )} ${dayNum}`,
-      amount: dailyExpenseMap[key] || 0,
-    };
-  });
+  const recentTxns = allTransactions.slice(0, 5);
+  const displayedTxns = showAllTransactions ? allTransactions : recentTxns;
 
   const monthName = new Date(selectedYear, selectedMonth).toLocaleString(
     "default",
@@ -121,226 +148,209 @@ export default function Dashboard() {
 
   if (loading || !user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
-        <div className="text-2xl font-medium text-gray-400">
-          Loading Dashboard...
-        </div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-xl font-medium text-gray-600">Loading...</div>
       </div>
     );
   }
 
+  const userName = user?.displayName || user?.email?.split("@")[0] || "User";
+
   return (
-    <div className="min-h-screen bg-gray-700 w-[78vw] text-gray-100 p-8 md:ml-20">
-      {/* Header */}
-      <div className="mb-10">
-        <h1 className="text-4xl font-black tracking-tight text-white bg-clip-text ">
-          Financial Dashboard
-        </h1>
-        <p className="text-white mt-2 text-lg">
-          Overview for {monthName} {selectedYear}
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50 justify-evenly  lg:ml-44 flex">
+      <Sidebar />
 
-      {/* Summary Cards - Industrial Style */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
-        {/* Total Income */}
-        <div className="relative overflow-hidden bg-blue-500 rounded-2xl p-8 shadow-2xl border border-blue-500/30">
-          <div className="absolute inset-0 bg-black/10"></div>
-          <div className="relative z-10">
-            <p className="text-blue-200 uppercase text-sm tracking-wider font-semibold">
-              Total Income
+      <div className="flex-1  p-4 md:p-6">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+              Hello {userName}!
+            </h1>
+            <p className="text-gray-600 text-sm mt-1">
+              Manage your finances easily.
             </p>
-            <p className="text-4xl font-extrabold mt-4">
-              ₹{totalIncome.toLocaleString("en-IN")}
-            </p>
-            <div className="mt-4 flex items-center text-blue-200">
-              <span className="text-2xl">📈</span>
-              <span className="ml-3 text-sm">Monthly Earnings</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-purple-200 rounded-full flex items-center justify-center text-purple-700 font-bold">
+              {userName[0].toUpperCase()}
             </div>
+            <span className="text-gray-700 text-sm font-medium hidden md:block">
+              {userName}
+            </span>
           </div>
         </div>
 
-        {/* Total Expense */}
-        <div className="relative overflow-hidden bg-red-600  rounded-2xl p-8 shadow-2xl border border-red-500/30">
-          <div className="absolute inset-0 bg-black/10"></div>
-          <div className="relative z-10">
-            <p className="text-red-200 uppercase text-sm tracking-wider font-semibold">
-              Total Expense
-            </p>
-            <p className="text-4xl font-extrabold mt-4">
-              ₹{totalExpenses.toLocaleString("en-IN")}
-            </p>
-            <div className="mt-4 flex items-center text-red-200">
-              <span className="text-2xl">📉</span>
-              <span className="ml-3 text-sm">Monthly Spending</span>
-            </div>
-          </div>
+        {/* Month Selector */}
+        <div className="mb-6">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-700 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+          >
+            {Array.from({ length: 12 }, (_, i) => (
+              <option key={i} value={i}>
+                {new Date(0, i).toLocaleString("default", { month: "long" })}{" "}
+                {selectedYear}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Total Savings */}
-        <div className="relative overflow-hidden bg-green-600 rounded-2xl p-8 shadow-2xl border border-emerald-500/30">
-          <div className="absolute inset-0 bg-black/10"></div>
-          <div className="relative z-10">
-            <p className="text-emerald-200 uppercase text-sm tracking-wider font-semibold">
-              {totalSavings >= 0 ? "Net Savings" : "Deficit"}
-            </p>
-            <p
-              className={`text-4xl font-extrabold mt-4 ${
-                totalSavings < 0 ? "text-red-300" : ""
-              }`}
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {[
+            { label: "Balance", value: totalBalance },
+            { label: "Income", value: totalIncome },
+            { label: "Expense", value: totalExpenses },
+            { label: "Savings", value: totalSavings },
+          ].map((card, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
             >
-              ₹{Math.abs(totalSavings).toLocaleString("en-IN")}
-            </p>
-            <div className="mt-4 flex items-center text-emerald-200">
-              <span className="text-2xl">
-                {totalSavings >= 0 ? "💰" : "⚠️"}
-              </span>
-              <span className="ml-3 text-sm">
-                {totalSavings >= 0 ? "Saved this month" : "Overspent"}
-              </span>
+              <p className="text-gray-600 text-xs mb-1">{card.label}</p>
+              <p className="text-xl font-bold text-gray-800">
+                ₹{card.value.toLocaleString("en-IN")}
+              </p>
+              <p className="text-gray-500 text-xs mt-1">{monthName}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <h2 className="text-lg font-bold text-gray-800 mb-4">Money Flow</h2>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={moneyFlowData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis
+                  tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
+                  tick={{ fontSize: 12 }}
+                />
+                <Tooltip formatter={(v) => `₹${v.toLocaleString("en-IN")}`} />
+                <Bar dataKey="Income" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Expense" fill="#E0E7FF" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <h2 className="text-lg font-bold text-gray-800 mb-4">
+              Budget Breakdown
+            </h2>
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={budgetData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={90}
+                  paddingAngle={4}
+                  label={({ name }) => name}
+                  labelStyle={{ fontSize: "12px" }}
+                >
+                  {budgetData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v) => `₹${v.toLocaleString("en-IN")}`} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="mt-4 text-center">
+              <p className="text-gray-600 text-xs">Total Expenses</p>
+              <p className="text-xl font-bold text-gray-800">
+                ₹{totalExpenses.toLocaleString("en-IN")}
+              </p>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Month Selector */}
-      <div className="flex justify-end mb-10">
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(Number(e.target.value))}
-          className="bg-gray-800 border border-gray-700 text-gray-100 rounded-xl px-6 py-4 text-lg font-medium focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition"
-        >
-          {Array.from({ length: 12 }, (_, i) => (
-            <option key={i} value={i}>
-              {new Date(0, i).toLocaleString("default", { month: "long" })}{" "}
-              {selectedYear}
-            </option>
-          ))}
-        </select>
-      </div>
+        {/* Recent Transactions - With Scroll After 10 Items */}
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold text-gray-800">
+              Recent Transactions
+            </h2>
+            <button
+              onClick={() => setShowAllTransactions(!showAllTransactions)}
+              className="text-purple-600 hover:underline text-xs font-medium"
+            >
+              {showAllTransactions ? "Show Less" : "See All →"}
+            </button>
+          </div>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-10">
-        {/* Top Expense Sources - Bar Chart */}
-        <div className="bg-gray-800/80 backdrop-blur-md rounded-2xl p-8 border border-gray-700 shadow-2xl">
-          <h2 className="text-2xl font-bold text-gray-100 mb-6 border-b border-gray-700 pb-4">
-            Top Expense Categories
-          </h2>
-          <ResponsiveContainer width="100%" height={420}>
-            <BarChart data={topCategories}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis
-                dataKey="category"
-                angle={-45}
-                textAnchor="end"
-                height={90}
-                tick={{ fill: "#9CA3AF", fontSize: 13 }}
-              />
-              <YAxis
-                tick={{ fill: "#9CA3AF" }}
-                tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#1F2937",
-                  border: "none",
-                  borderRadius: "12px",
-                }}
-                labelStyle={{ color: "#60A5FA" }}
-                formatter={(value) =>
-                  `₹${Number(value).toLocaleString("en-IN")}`
-                }
-              />
-              <Bar dataKey="amount" fill="#10B981" radius={[12, 12, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="overflow-x-auto">
+            <div className="max-h-96 overflow-y-auto">
+              {" "}
+              {/* Scroll after ~10 rows */}
+              <table className="w-full text-left text-sm">
+                <thead className="text-gray-500 text-xs border-b border-gray-200 sticky top-0 bg-white">
+                  <tr>
+                    <th className="pb-2">DATE</th>
+                    <th className="pb-2">AMOUNT</th>
+                    <th className="pb-2">DESC</th>
+                    <th className="pb-2">METHOD</th>
+                    <th className="pb-2">CAT</th>
+                  </tr>
+                </thead>
+                <tbody className="text-gray-700">
+                  {displayedTxns.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="text-center py-6 text-gray-500 text-xs"
+                      >
+                        No transactions this month
+                      </td>
+                    </tr>
+                  ) : (
+                    displayedTxns.map((txn, i) => {
+                      const date = txn.date.toDate
+                        ? txn.date.toDate()
+                        : txn.date;
+                      return (
+                        <tr key={i} className="border-b border-gray-100">
+                          <td className="py-3 text-xs">
+                            {date.toLocaleDateString("en-IN").slice(0, -5)}
+                          </td>
+                          <td
+                            className={`py-3 font-medium text-xs ${
+                              txn.type === "income"
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {txn.type === "income" ? "+" : "-"}₹
+                            {txn.amount.toLocaleString("en-IN")}
+                          </td>
+                          <td className="py-3 text-xs">
+                            {txn.description.slice(0, 18)}
+                            {txn.description.length > 18 ? "..." : ""}
+                          </td>
+                          <td className="py-3 text-xs">
+                            {(txn.method || "Card").slice(0, 10)}
+                          </td>
+                          <td className="py-3 text-xs">
+                            {(txn.category || "—").slice(0, 12)}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-
-        {/* Report Overview - Pie Chart */}
-        <div className="bg-gray-800/80 backdrop-blur-md rounded-2xl p-8 border border-gray-700 shadow-2xl">
-          <h2 className="text-2xl font-bold text-gray-100 mb-6 border-b border-gray-700 pb-4">
-            Financial Breakdown
-          </h2>
-          <ResponsiveContainer width="100%" height={420}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                innerRadius={90}
-                outerRadius={160}
-                paddingAngle={4}
-                label={({ name, percentage }) =>
-                  `${name}: ${percentage.toFixed(0)}%`
-                }
-                labelStyle={{ fill: "#E5E7EB", fontWeight: "bold" }}
-              >
-                {pieData.map((entry) => (
-                  <Cell key={entry.name} fill={PIE_COLORS[entry.name]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#1F2937",
-                  border: "none",
-                  borderRadius: "12px",
-                }}
-                formatter={(value) =>
-                  `₹${Number(value).toLocaleString("en-IN")}`
-                }
-              />
-              <Legend
-                iconType="circle"
-                wrapperStyle={{ paddingTop: "20px" }}
-                formatter={(value) => (
-                  <span className="text-gray-300 font-medium">{value}</span>
-                )}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Expense Activity - Line Chart (Full Width) */}
-      <div className="bg-gray-800/80 backdrop-blur-md rounded-2xl p-8 border border-gray-700 shadow-2xl">
-        <h2 className="text-2xl font-bold text-gray-100 mb-6 border-b border-gray-700 pb-4">
-          Daily Expense Trend
-        </h2>
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={dailyExpenses}>
-            <CartesianGrid strokeDasharray="4 4" stroke="#374151" />
-            <XAxis
-              dataKey="day"
-              tick={{ fill: "#9CA3AF", fontSize: 12 }}
-              angle={-45}
-              textAnchor="end"
-              height={70}
-            />
-            <YAxis
-              tick={{ fill: "#9CA3AF" }}
-              tickFormatter={(value) => `₹${value.toLocaleString("en-IN")}`}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#1F2937",
-                border: "none",
-                borderRadius: "12px",
-              }}
-              labelStyle={{ color: "#60A5FA" }}
-              formatter={(value) => `₹${Number(value).toLocaleString("en-IN")}`}
-            />
-            <Line
-              type="monotone"
-              dataKey="amount"
-              stroke="#10B981"
-              strokeWidth={4}
-              dot={{ fill: "#10B981", r: 6 }}
-              activeDot={{ r: 9, stroke: "#34D399", strokeWidth: 3 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
       </div>
     </div>
   );

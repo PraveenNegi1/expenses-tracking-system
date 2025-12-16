@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import { addIncome } from "@/lib/firestore";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import Sidebar from "@/components/Navbar";
+
 export default function IncomePage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -14,13 +16,11 @@ export default function IncomePage() {
   const [incomes, setIncomes] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
-  if (!user) {
-    router.push("/login");
-    return null;
-  }
-
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      router.push("/login");
+      return;
+    }
 
     const incomesRef = collection(db, "users", user.uid, "incomes");
     const q = query(incomesRef, orderBy("timestamp", "desc"));
@@ -36,84 +36,82 @@ export default function IncomePage() {
         setHistoryLoading(false);
       },
       (error) => {
-        console.error("Error fetching income history:", error);
+        console.error("Error fetching income:", error);
         setHistoryLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!amount || amount <= 0) return;
 
     setLoading(true);
+    setMessage("");
+
     try {
       await addIncome(user.uid, parseFloat(amount));
       setMessage("Income added successfully!");
       setAmount("");
-      router.refresh();
-
-      setTimeout(() => setMessage(""), 4000);
+      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
-      setMessage("Error adding income. Please try again.");
+      setMessage("Error adding income.");
       console.error(error);
+      setTimeout(() => setMessage(""), 4000);
     } finally {
       setLoading(false);
     }
   };
 
-  const isSuccess = message && !message.includes("Error");
-
   const formatDate = (timestamp) => {
     if (!timestamp) return "—";
     return timestamp.toDate().toLocaleDateString("en-IN", {
-      day: "2-digit",
+      day: "numeric",
       month: "short",
       year: "numeric",
     });
   };
 
+  if (!user) return null;
+
   return (
-    <div className="min-h-screen md:ml-36  flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl">
-        <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-10 border border-white/50">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-800">Add Income</h1>
-            <p className="text-gray-600 mt-2">Enter your income amount below</p>
+  <div className="md:ml-44">
+      <div className="min-h-screen bg-gray-50 flex">
+      {/* Compact Sidebar */}
+      <Sidebar />
+
+      {/* Main Content - Compact */}
+      <div className="flex-1  p-4 md:p-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            Add Income
+          </h1>
+          <p className="text-gray-600 text-sm mt-1">Enter your income amount</p>
+        </div>
+
+        {/* Message */}
+        {message && (
+          <div
+            className={`mb-5 p-3 rounded-lg text-center text-sm font-medium shadow-sm border ${
+              message.includes("success")
+                ? "bg-green-100 text-green-800 border-green-200"
+                : "bg-red-100 text-red-800 border-red-200"
+            }`}
+          >
+            {message}
           </div>
+        )}
 
-          {message && (
-            <div
-              className={`mb-6 p-4 rounded-xl font-medium text-center transition-all duration-500 ${
-                isSuccess
-                  ? "bg-green-100 text-green-800 border border-green-200"
-                  : "bg-red-100 text-red-800 border border-red-200"
-              }`}
-            >
-              {isSuccess && (
-                <svg
-                  className="w-6 h-6 mx-auto mb-2"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
-              {message}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Add Income Form - Compact */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-8">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                <span className="text-3xl font-bold text-gray-700">₹</span>
-              </div>
+              <span className="absolute left-4 top-3.5 text-xl font-bold text-gray-700">
+                ₹
+              </span>
               <input
                 type="number"
                 placeholder="0"
@@ -123,121 +121,77 @@ export default function IncomePage() {
                 min="1"
                 step="0.01"
                 disabled={loading}
-                className="w-full pl-12 pr-6 py-6 text-4xl font-semibold text-gray-800 bg-gray-50/50 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 disabled:opacity-60 transition-all"
+                className="w-full pl-12 pr-4 py-3.5 text-2xl font-semibold border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
               />
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading || !amount}
-              className="w-full bg-green-600 text-white font-bold text-xl py-5 rounded-2xl shadow-lg hover:shadow-xl hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center"
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded-lg transition disabled:opacity-60"
             >
-              {loading ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-6 w-6 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Adding...
-                </>
-              ) : (
-                "Add Income"
-              )}
+              {loading ? "Adding..." : "Add Income"}
             </button>
           </form>
-
-          <div className="mt-10 text-center">
-            <button
-              onClick={() => router.push("/dashboard")}
-              className="text-green-700 hover:text-green-800 font-medium flex items-center mx-auto gap-2 transition-colors"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-              Back to Dashboard
-            </button>
-          </div>
         </div>
 
-        <div className="mt-12 bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-10 border border-white/50">
-          <h2 className="text-3xl font-bold text-gray-800 mb-6">Income History</h2>
+        {/* Income History */}
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Income History</h2>
 
-          {historyLoading ? (
-            <div className="text-center py-8">
-              <svg
-                className="animate-spin mx-auto h-8 w-8 text-green-600"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-            </div>
-          ) : incomes.length === 0 ? (
-            <p className="text-center text-gray-600 py-8">No income records yet. Add your first income above!</p>
-          ) : (
+        {historyLoading ? (
+          <p className="text-center text-gray-600 py-8">Loading...</p>
+        ) : incomes.length === 0 ? (
+          <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
+            <p className="text-gray-600">No income records yet.</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Add your first income above!
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="py-4 px-6 font-semibold text-gray-700">Date</th>
-                    <th className="py-4 px-6 font-semibold text-gray-700 text-right">Amount</th>
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="py-3 px-5 font-medium text-gray-700">
+                      Date
+                    </th>
+                    <th className="py-3 px-5 font-medium text-gray-700 text-right">
+                      Amount
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {incomes.map((income) => (
-                    <tr key={income.id} className="border-b border-gray-100 hover:bg-green-50/50 transition">
-                      <td className="py-4 px-6 text-gray-800">{formatDate(income.timestamp)}</td>
-                      <td className="py-4 px-6 text-gray-800 text-right font-medium">
-                        ₹{income.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    <tr
+                      key={income.id}
+                      className="border-b border-gray-100 hover:bg-gray-50"
+                    >
+                      <td className="py-3 px-5 text-gray-800">
+                        {formatDate(income.timestamp)}
+                      </td>
+                      <td className="py-3 px-5 text-right font-medium text-green-700">
+                        ₹{income.amount.toLocaleString("en-IN")}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
+        )}
+
+        {/* Back Button */}
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-1 mx-auto"
+          >
+            ← Back to Dashboard
+          </button>
         </div>
       </div>
     </div>
+  </div>
   );
 }
