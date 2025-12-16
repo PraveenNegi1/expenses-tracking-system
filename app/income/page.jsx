@@ -163,7 +163,6 @@ export default function IncomePage() {
             </button>
           </form>
 
-          {/* Back to Dashboard */}
           <div className="mt-10 text-center">
             <button
               onClick={() => router.push("/dashboard")}
@@ -187,7 +186,6 @@ export default function IncomePage() {
           </div>
         </div>
 
-        {/* Income History Section */}
         <div className="mt-12 bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-10 border border-white/50">
           <h2 className="text-3xl font-bold text-gray-800 mb-6">Income History</h2>
 
