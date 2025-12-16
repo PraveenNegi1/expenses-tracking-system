@@ -110,7 +110,6 @@ export default function IncomePage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Amount Input with ₹ prefix */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                 <span className="text-3xl font-bold text-gray-700">₹</span>
