@@ -161,7 +161,6 @@ export default function Dashboard() {
       <Sidebar />
 
       <div className="flex-1  p-4 md:p-6">
-        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
@@ -181,7 +180,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Month Selector */}
         <div className="mb-6">
           <select
             value={selectedMonth}
@@ -197,7 +195,6 @@ export default function Dashboard() {
           </select>
         </div>
 
-        {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             { label: "Balance", value: totalBalance },
@@ -218,7 +215,6 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
             <h2 className="text-lg font-bold text-gray-800 mb-4">Money Flow</h2>
