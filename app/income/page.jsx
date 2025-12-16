@@ -1,20 +1,49 @@
 "use client";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { addIncome } from "@/lib/firestore";
-
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 export default function IncomePage() {
   const { user } = useAuth();
   const router = useRouter();
   const [amount, setAmount] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [incomes, setIncomes] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   if (!user) {
     router.push("/login");
     return null;
   }
+
+  // Fetch income history in real-time
+  useEffect(() => {
+    if (!user) return;
+
+    const incomesRef = collection(db, "users", user.uid, "incomes");
+    const q = query(incomesRef, orderBy("timestamp", "desc"));
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setIncomes(data);
+        setHistoryLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching income history:", error);
+        setHistoryLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,9 +67,18 @@ export default function IncomePage() {
 
   const isSuccess = message && !message.includes("Error");
 
+  const formatDate = (timestamp) => {
+    if (!timestamp) return "—";
+    return timestamp.toDate().toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
   return (
-    <div className="min-h-screen md:ml-36 bg-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen md:ml-36  flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl">
         {/* Main Card */}
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-10 border border-white/50">
           <div className="text-center mb-8">
@@ -97,7 +135,7 @@ export default function IncomePage() {
             <button
               type="submit"
               disabled={loading || !amount}
-              className="w-full bg-green-600  text-white font-bold text-xl py-5 rounded-2xl shadow-lg hover:shadow-xl hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center"
+              className="w-full bg-green-600 text-white font-bold text-xl py-5 rounded-2xl shadow-lg hover:shadow-xl hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center"
             >
               {loading ? (
                 <>
@@ -151,6 +189,59 @@ export default function IncomePage() {
               Back to Dashboard
             </button>
           </div>
+        </div>
+
+        {/* Income History Section */}
+        <div className="mt-12 bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-10 border border-white/50">
+          <h2 className="text-3xl font-bold text-gray-800 mb-6">Income History</h2>
+
+          {historyLoading ? (
+            <div className="text-center py-8">
+              <svg
+                className="animate-spin mx-auto h-8 w-8 text-green-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            </div>
+          ) : incomes.length === 0 ? (
+            <p className="text-center text-gray-600 py-8">No income records yet. Add your first income above!</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="py-4 px-6 font-semibold text-gray-700">Date</th>
+                    <th className="py-4 px-6 font-semibold text-gray-700 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {incomes.map((income) => (
+                    <tr key={income.id} className="border-b border-gray-100 hover:bg-green-50/50 transition">
+                      <td className="py-4 px-6 text-gray-800">{formatDate(income.timestamp)}</td>
+                      <td className="py-4 px-6 text-gray-800 text-right font-medium">
+                        ₹{income.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
