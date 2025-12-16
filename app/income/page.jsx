@@ -78,14 +78,12 @@ export default function IncomePage() {
   return (
     <div className="min-h-screen md:ml-36  flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
-        {/* Main Card */}
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-10 border border-white/50">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-800">Add Income</h1>
             <p className="text-gray-600 mt-2">Enter your income amount below</p>
           </div>
 
-          {/* Success/Error Message */}
           {message && (
             <div
               className={`mb-6 p-4 rounded-xl font-medium text-center transition-all duration-500 ${
