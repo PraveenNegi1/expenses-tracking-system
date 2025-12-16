@@ -164,7 +164,6 @@ export default function ExpensesPage() {
   return (
     <div className="min-h-screen md:ml-32 bg-amber-100 w-full py-8 px-4">
       <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-10">
-        {/* Add Expense Form */}
         <div className="w-full">
           <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-10 border border-white/50">
             <div className="text-center mb-8">
@@ -242,7 +241,6 @@ export default function ExpensesPage() {
           </div>
         </div>
 
-        {/* Expenses List */}
         <div className="w-full">
           <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center lg:text-left">
             Your Expenses
@@ -358,7 +356,6 @@ export default function ExpensesPage() {
         </div>
       </div>
 
-      {/* Back Button */}
       <div className="text-center mt-12">
         <button
           onClick={() => router.push("/dashboard")}
