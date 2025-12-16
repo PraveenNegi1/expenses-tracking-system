@@ -19,7 +19,6 @@ export default function IncomePage() {
     return null;
   }
 
-  // Fetch income history in real-time
   useEffect(() => {
     if (!user) return;
 
