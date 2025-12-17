@@ -18,7 +18,7 @@ import {
 import Sidebar from "@/components/Navbar";
 
 export default function Dashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
 
   const [income, setIncome] = useState([]);
@@ -32,6 +32,9 @@ export default function Dashboard() {
   const [filterMinAmount, setFilterMinAmount] = useState(false);
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
+
+  // Dropdown state
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
@@ -125,35 +128,31 @@ export default function Dashboard() {
 
   const moneyFlowData = getMoneyFlowData();
 
-  // Combine income and expenses for transactions list
   const allTransactions = [
     ...filteredIncome.map((t) => ({
       ...t,
       type: "income",
       description: "Income Added",
-      method: t.method || "—", // Income may not have method
+      method: t.method || "—",
     })),
     ...filteredExpenses.map((t) => ({
       ...t,
       type: "expense",
       description: t.title || "Expense",
-      method: t.method || "Card", // Use saved method, fallback to "Card"
+      method: t.method || "Card",
     })),
   ];
 
-  // Sort by date (newest first)
   allTransactions.sort((a, b) => {
     const dateA = a.date.toDate ? a.date.toDate() : a.date;
     const dateB = b.date.toDate ? b.date.toDate() : b.date;
     return dateB - dateA;
   });
 
-  // Apply filters
   const filteredTransactions = allTransactions.filter((txn) => {
     const date = txn.date.toDate ? txn.date.toDate() : txn.date;
     const txnDateStr = date.toISOString().split("T")[0];
 
-    // Payment Method Filter
     if (filterMethod !== "all") {
       const txnMethod = (txn.method || "Card").toLowerCase().trim();
 
@@ -163,10 +162,8 @@ export default function Dashboard() {
       if (filterMethod === "cash" && txnMethod !== "cash") return false;
     }
 
-    // Amount > 200
     if (filterMinAmount && txn.amount <= 200) return false;
 
-    // Date range
     if (filterDateFrom && txnDateStr < filterDateFrom) return false;
     if (filterDateTo && txnDateStr > filterDateTo) return false;
 
@@ -189,32 +186,113 @@ export default function Dashboard() {
     );
   }
 
-  const userName = user?.displayName || user?.email?.split("@")[0] || "User";
+  // Dynamically get clean display name
+  let displayName = "User";
+
+  if (user?.displayName) {
+    displayName = user.displayName.trim();
+  } else if (user?.email) {
+    const namePart = user.email.split("@")[0];
+    const cleanName = namePart
+      .split(/[\.\_\-\d]/)
+      .filter((part) => part.length > 0)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(" ");
+
+    displayName = cleanName || "User";
+  }
+
+  const avatarInitial = displayName.charAt(0).toUpperCase();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 justify-evenly lg:ml-44 flex">
       <Sidebar />
 
       <div className="flex-1 p-4 md:p-6">
-        {/* ... (header, month selector, cards, charts unchanged) ... */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-              Hello {userName}!
+              Hello {displayName}!
             </h1>
             <p className="text-gray-600 text-sm mt-1">
               Manage your finances easily.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-purple-200 rounded-full flex items-center justify-center text-purple-700 font-bold">
-              {userName[0].toUpperCase()}
-            </div>
-            <span className="text-gray-700 text-sm font-medium hidden md:block">
-              {userName}
-            </span>
+
+          {/* Profile Section with Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              className="flex items-center gap-3 hover:bg-gray-100 rounded-lg px-3 py-2 transition"
+            >
+              <div className="w-10 h-10 bg-purple-200 rounded-full flex items-center justify-center text-purple-700 font-bold">
+                {avatarInitial}
+              </div>
+              <span className="text-gray-700 font-medium hidden md:block">
+                {displayName}
+              </span>
+              <svg
+                className={`w-4 h-4 text-gray-600 transition-transform ${
+                  showProfileDropdown ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+
+            {/* Dropdown */}
+            {showProfileDropdown && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <p className="text-sm font-semibold text-gray-800">
+                    {displayName}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{user?.email}</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M17 16l4-4m0 0l-4-4m4 4H7"
+                    />
+                  </svg>
+                  Log out
+                </button>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Close dropdown when clicking outside */}
+        {showProfileDropdown && (
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowProfileDropdown(false)}
+          />
+        )}
 
         <div className="mb-6">
           <select
