@@ -20,6 +20,8 @@ const CATEGORIES = [
   "Other",
 ];
 
+const PAYMENT_METHODS = ["Card", "Online", "Cash"];
+
 export default function ExpensesPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -27,6 +29,7 @@ export default function ExpensesPage() {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
+  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,6 +41,9 @@ export default function ExpensesPage() {
   const [editTitle, setEditTitle] = useState("");
   const [editAmount, setEditAmount] = useState("");
   const [editCategory, setEditCategory] = useState("");
+  const [editPaymentMethod, setEditPaymentMethod] = useState(
+    PAYMENT_METHODS[0]
+  );
 
   useEffect(() => {
     if (!user) {
@@ -62,9 +68,17 @@ export default function ExpensesPage() {
     fetchExpenses();
   }, [user, router]);
 
+  // Check if all required fields are filled
+  const isAddFormValid =
+    title.trim() !== "" &&
+    amount !== "" &&
+    Number(amount) > 0 &&
+    category &&
+    paymentMethod;
+
   const handleAddSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !amount || amount <= 0) return;
+    if (!isAddFormValid) return;
 
     setLoading(true);
     setMessage("");
@@ -75,12 +89,14 @@ export default function ExpensesPage() {
         title: title.trim(),
         category,
         amount: Number(amount),
+        method: paymentMethod, // Save payment method
       });
 
       setMessage("Expense added!");
       setTitle("");
       setAmount("");
       setCategory(CATEGORIES[0]);
+      setPaymentMethod(PAYMENT_METHODS[0]);
 
       const updated = await getTransactions(user.uid, "expenses");
       setExpenses(
@@ -101,20 +117,29 @@ export default function ExpensesPage() {
     setEditTitle(expense.title);
     setEditAmount(expense.amount);
     setEditCategory(expense.category || CATEGORIES[0]);
+    setEditPaymentMethod(expense.method || PAYMENT_METHODS[0]);
   };
 
   const cancelEdit = () => {
     setEditingId(null);
   };
 
+  const isEditFormValid =
+    editTitle.trim() !== "" &&
+    editAmount !== "" &&
+    Number(editAmount) > 0 &&
+    editCategory &&
+    editPaymentMethod;
+
   const handleUpdate = async (id) => {
-    if (!editTitle.trim() || !editAmount || editAmount <= 0) return;
+    if (!isEditFormValid) return;
 
     try {
       await updateExpense(user.uid, id, {
         title: editTitle.trim(),
         amount: Number(editAmount),
         category: editCategory,
+        method: editPaymentMethod,
       });
 
       setMessage("Expense updated!");
@@ -155,10 +180,10 @@ export default function ExpensesPage() {
 
   return (
     <div className="md:ml-44">
-      <div className="min-h-screen  bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50 flex">
         <Sidebar />
 
-        <div className="flex-1  p-4 md:p-6">
+        <div className="flex-1 p-4 md:p-6">
           <div className="mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
               Add Expense
@@ -182,7 +207,7 @@ export default function ExpensesPage() {
             <form onSubmit={handleAddSubmit} className="space-y-4">
               <input
                 type="text"
-                placeholder="Expense title"
+                placeholder="Expense title (e.g. Lunch)"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
@@ -220,17 +245,31 @@ export default function ExpensesPage() {
                 ))}
               </select>
 
+              {/* New Payment Method Field */}
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                disabled={loading}
+                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 cursor-pointer"
+              >
+                {PAYMENT_METHODS.map((method) => (
+                  <option key={method} value={method}>
+                    {method}
+                  </option>
+                ))}
+              </select>
+
               <button
                 type="submit"
-                disabled={loading || !title || !amount}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-lg transition disabled:opacity-60"
+                disabled={loading || !isAddFormValid}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading ? "Adding..." : "Add Expense"}
               </button>
             </form>
           </div>
 
-          {/* Expenses List - Scrollable After ~10 Items */}
+          {/* Expenses List */}
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             Your Expenses
           </h2>
@@ -245,8 +284,6 @@ export default function ExpensesPage() {
           ) : (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100">
               <div className="max-h-96 overflow-y-auto">
-                {" "}
-                {/* Scroll after ~10 items */}
                 <div className="space-y-3 p-4">
                   {expenses.map((exp) => (
                     <div
@@ -283,10 +320,27 @@ export default function ExpensesPage() {
                               </option>
                             ))}
                           </select>
+
+                          {/* Edit Payment Method */}
+                          <select
+                            value={editPaymentMethod}
+                            onChange={(e) =>
+                              setEditPaymentMethod(e.target.value)
+                            }
+                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                          >
+                            {PAYMENT_METHODS.map((method) => (
+                              <option key={method} value={method}>
+                                {method}
+                              </option>
+                            ))}
+                          </select>
+
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleUpdate(exp.id)}
-                              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium"
+                              disabled={!isEditFormValid}
+                              className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white py-2 rounded-lg text-sm font-medium"
                             >
                               Save
                             </button>
@@ -305,7 +359,7 @@ export default function ExpensesPage() {
                               {exp.title}
                             </h3>
                             <p className="text-sm text-gray-600">
-                              {exp.category}
+                              {exp.category} • {exp.method || "Card"}
                             </p>
                             <p className="text-xl font-bold text-red-600 mt-1">
                               ₹{exp.amount.toLocaleString("en-IN")}

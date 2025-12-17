@@ -27,6 +27,12 @@ export default function Dashboard() {
   const [selectedYear] = useState(new Date().getFullYear());
   const [showAllTransactions, setShowAllTransactions] = useState(false);
 
+  // Filter states
+  const [filterMethod, setFilterMethod] = useState("all");
+  const [filterMinAmount, setFilterMinAmount] = useState(false);
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+
   useEffect(() => {
     if (!loading && !user) router.push("/login");
   }, [user, loading, router]);
@@ -119,27 +125,56 @@ export default function Dashboard() {
 
   const moneyFlowData = getMoneyFlowData();
 
+  // Combine income and expenses for transactions list
   const allTransactions = [
     ...filteredIncome.map((t) => ({
       ...t,
       type: "income",
       description: "Income Added",
+      method: t.method || "—", // Income may not have method
     })),
     ...filteredExpenses.map((t) => ({
       ...t,
       type: "expense",
       description: t.title || "Expense",
+      method: t.method || "Card", // Use saved method, fallback to "Card"
     })),
   ];
 
+  // Sort by date (newest first)
   allTransactions.sort((a, b) => {
     const dateA = a.date.toDate ? a.date.toDate() : a.date;
     const dateB = b.date.toDate ? b.date.toDate() : b.date;
     return dateB - dateA;
   });
 
-  const recentTxns = allTransactions.slice(0, 5);
-  const displayedTxns = showAllTransactions ? allTransactions : recentTxns;
+  // Apply filters
+  const filteredTransactions = allTransactions.filter((txn) => {
+    const date = txn.date.toDate ? txn.date.toDate() : txn.date;
+    const txnDateStr = date.toISOString().split("T")[0];
+
+    // Payment Method Filter
+    if (filterMethod !== "all") {
+      const txnMethod = (txn.method || "Card").toLowerCase().trim();
+
+      if (filterMethod === "card" && !txnMethod.includes("card")) return false;
+      if (filterMethod === "online" && !txnMethod.includes("online"))
+        return false;
+      if (filterMethod === "cash" && txnMethod !== "cash") return false;
+    }
+
+    // Amount > 200
+    if (filterMinAmount && txn.amount <= 200) return false;
+
+    // Date range
+    if (filterDateFrom && txnDateStr < filterDateFrom) return false;
+    if (filterDateTo && txnDateStr > filterDateTo) return false;
+
+    return true;
+  });
+
+  const recentTxns = filteredTransactions.slice(0, 5);
+  const displayedTxns = showAllTransactions ? filteredTransactions : recentTxns;
 
   const monthName = new Date(selectedYear, selectedMonth).toLocaleString(
     "default",
@@ -157,10 +192,11 @@ export default function Dashboard() {
   const userName = user?.displayName || user?.email?.split("@")[0] || "User";
 
   return (
-    <div className="min-h-screen bg-gray-50 justify-evenly  lg:ml-44 flex">
+    <div className="min-h-screen bg-gray-50 justify-evenly lg:ml-44 flex">
       <Sidebar />
 
-      <div className="flex-1  p-4 md:p-6">
+      <div className="flex-1 p-4 md:p-6">
+        {/* ... (header, month selector, cards, charts unchanged) ... */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
@@ -228,7 +264,7 @@ export default function Dashboard() {
                 />
                 <Tooltip formatter={(v) => `₹${v.toLocaleString("en-IN")}`} />
                 <Bar dataKey="Income" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Expense" fill="#E0E7FF" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Expense" fill="#FF0000" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -270,12 +306,50 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Transactions - With Scroll After 10 Items */}
+        {/* Recent Transactions */}
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
             <h2 className="text-lg font-bold text-gray-800">
               Recent Transactions
             </h2>
+
+            <div className="flex flex-wrap gap-3 text-xs">
+              <select
+                value={filterMethod}
+                onChange={(e) => setFilterMethod(e.target.value)}
+                className="px-3 py-1.5 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              >
+                <option value="all">All Methods</option>
+                <option value="card">Card</option>
+                <option value="online">Online</option>
+                <option value="cash">Cash</option>
+              </select>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filterMinAmount}
+                  onChange={(e) => setFilterMinAmount(e.target.checked)}
+                  className="rounded text-purple-600 focus:ring-purple-400"
+                />
+                <span>Above ₹200</span>
+              </label>
+
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={(e) => setFilterDateFrom(e.target.value)}
+                className="px-3 py-1.5 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              />
+
+              <input
+                type="date"
+                value={filterDateTo}
+                onChange={(e) => setFilterDateTo(e.target.value)}
+                className="px-3 py-1.5 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              />
+            </div>
+
             <button
               onClick={() => setShowAllTransactions(!showAllTransactions)}
               className="text-purple-600 hover:underline text-xs font-medium"
@@ -286,8 +360,6 @@ export default function Dashboard() {
 
           <div className="overflow-x-auto">
             <div className="max-h-96 overflow-y-auto">
-              {" "}
-              {/* Scroll after ~10 rows */}
               <table className="w-full text-left text-sm">
                 <thead className="text-gray-500 text-xs border-b border-gray-200 sticky top-0 bg-white">
                   <tr>
@@ -305,7 +377,7 @@ export default function Dashboard() {
                         colSpan={5}
                         className="text-center py-6 text-gray-500 text-xs"
                       >
-                        No transactions this month
+                        No transactions match the selected filters
                       </td>
                     </tr>
                   ) : (
@@ -316,7 +388,10 @@ export default function Dashboard() {
                       return (
                         <tr key={i} className="border-b border-gray-100">
                           <td className="py-3 text-xs">
-                            {date.toLocaleDateString("en-IN").slice(0, -5)}
+                            {date.toLocaleDateString("en-IN", {
+                              day: "2-digit",
+                              month: "short",
+                            })}
                           </td>
                           <td
                             className={`py-3 font-medium text-xs ${
@@ -332,11 +407,11 @@ export default function Dashboard() {
                             {txn.description.slice(0, 18)}
                             {txn.description.length > 18 ? "..." : ""}
                           </td>
-                          <td className="py-3 text-xs">
-                            {(txn.method || "Card").slice(0, 10)}
+                          <td className="py-3 text-xs font-medium">
+                            {txn.method || "—"}
                           </td>
                           <td className="py-3 text-xs">
-                            {(txn.category || "—").slice(0, 12)}
+                            {txn.category || "—"}
                           </td>
                         </tr>
                       );
