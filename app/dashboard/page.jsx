@@ -128,6 +128,60 @@ export default function Dashboard() {
 
   const moneyFlowData = getMoneyFlowData();
 
+  // === NEW: Monthly Expenses Comparison Data ===
+  const getMonthlyExpensesData = () => {
+    const data = [];
+    let maxExpense = 0;
+    let maxMonth = "";
+
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(selectedYear, selectedMonth - i, 1);
+      const monthShort = date.toLocaleString("default", { month: "short" });
+
+      const monthExpenseTotal = expenses
+        .filter((t) => {
+          const d = t.date.toDate ? t.date.toDate() : t.date;
+          return (
+            d.getMonth() === date.getMonth() &&
+            d.getFullYear() === date.getFullYear()
+          );
+        })
+        .reduce((s, t) => s + t.amount, 0);
+
+      if (monthExpenseTotal > maxExpense) {
+        maxExpense = monthExpenseTotal;
+        maxMonth = monthShort;
+      }
+
+      data.push({
+        month: monthShort,
+        expenses: monthExpenseTotal,
+        isHighest: monthExpenseTotal === maxExpense,
+      });
+    }
+
+    // Add difference info for tooltip
+    return data
+      .map((item, index) => {
+        if (index === data.length - 1) return { ...item, diff: null }; // oldest month
+        const prev = data[index + 1].expenses;
+        const diff = item.expenses - prev;
+        return {
+          ...item,
+          diff,
+          diffText:
+            diff > 0
+              ? `+₹${Math.abs(diff).toLocaleString("en-IN")} more than previous`
+              : diff < 0
+              ? `₹${Math.abs(diff).toLocaleString("en-IN")} less than previous`
+              : "Same as previous",
+        };
+      })
+      .reverse(); // newest month first
+  };
+
+  const monthlyExpensesData = getMonthlyExpensesData();
+
   const allTransactions = [
     ...filteredIncome.map((t) => ({
       ...t,
@@ -155,7 +209,6 @@ export default function Dashboard() {
 
     if (filterMethod !== "all") {
       const txnMethod = (txn.method || "Card").toLowerCase().trim();
-
       if (filterMethod === "card" && !txnMethod.includes("card")) return false;
       if (filterMethod === "online" && !txnMethod.includes("online"))
         return false;
@@ -163,7 +216,6 @@ export default function Dashboard() {
     }
 
     if (filterMinAmount && txn.amount <= 200) return false;
-
     if (filterDateFrom && txnDateStr < filterDateFrom) return false;
     if (filterDateTo && txnDateStr > filterDateTo) return false;
 
@@ -188,7 +240,6 @@ export default function Dashboard() {
 
   // Dynamically get clean display name
   let displayName = "User";
-
   if (user?.displayName) {
     displayName = user.displayName.trim();
   } else if (user?.email) {
@@ -198,7 +249,6 @@ export default function Dashboard() {
       .filter((part) => part.length > 0)
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
       .join(" ");
-
     displayName = cleanName || "User";
   }
 
@@ -214,6 +264,7 @@ export default function Dashboard() {
       <Sidebar />
 
       <div className="flex-1 p-4 md:p-6">
+        {/* Header & Profile */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
@@ -224,7 +275,6 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {/* Profile Section with Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
@@ -253,7 +303,6 @@ export default function Dashboard() {
               </svg>
             </button>
 
-            {/* Dropdown */}
             {showProfileDropdown && (
               <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
                 <div className="px-4 py-3 border-b border-gray-100">
@@ -286,7 +335,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Close dropdown when clicking outside */}
         {showProfileDropdown && (
           <div
             className="fixed inset-0 z-40"
@@ -294,6 +342,7 @@ export default function Dashboard() {
           />
         )}
 
+        {/* Month Selector */}
         <div className="mb-6">
           <select
             value={selectedMonth}
@@ -309,6 +358,7 @@ export default function Dashboard() {
           </select>
         </div>
 
+        {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             { label: "Balance", value: totalBalance },
@@ -329,6 +379,7 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {/* Existing Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
             <h2 className="text-lg font-bold text-gray-800 mb-4">Money Flow</h2>
@@ -342,7 +393,7 @@ export default function Dashboard() {
                 />
                 <Tooltip formatter={(v) => `₹${v.toLocaleString("en-IN")}`} />
                 <Bar dataKey="Income" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Expense" fill="#FF0000" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Expense" fill="#EF4444" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -384,13 +435,68 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* NEW: Monthly Expenses Comparison Chart - FIXED VERSION */}
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 mb-8">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">
+            Monthly Expenses Trend
+          </h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={monthlyExpensesData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+              <YAxis
+                tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
+                tick={{ fontSize: 12 }}
+              />
+              <Tooltip
+                formatter={(value) =>
+                  `₹${Number(value).toLocaleString("en-IN")}`
+                }
+                labelFormatter={(label) => `${label} Expenses`}
+                content={({ payload }) => {
+                  if (!payload || payload.length === 0) return null;
+                  const data = payload[0].payload;
+                  return (
+                    <div className="bg-white p-3 rounded-lg shadow border border-gray-200">
+                      <p className="font-medium text-gray-800">{data.month}</p>
+                      <p className="text-lg font-bold text-red-600">
+                        ₹{data.expenses.toLocaleString("en-IN")}
+                      </p>
+                      {data.diffText && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          {data.diffText}
+                        </p>
+                      )}
+                      {data.isHighest && (
+                        <p className="text-xs font-medium text-orange-600 mt-1">
+                          ↗ Highest this year
+                        </p>
+                      )}
+                    </div>
+                  );
+                }}
+              />
+              <Bar dataKey="expenses" radius={[8, 8, 0, 0]}>
+                {monthlyExpensesData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.isHighest ? "#DC2626" : "#EF4444"}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <p className="text-xs text-gray-500 mt-3 text-center">
+            Last 12 months expenses • Dark red bar = Highest spending month
+          </p>
+        </div>
         {/* Recent Transactions */}
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          {/* ... (your existing transactions code unchanged) ... */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
             <h2 className="text-lg font-bold text-gray-800">
               Recent Transactions
             </h2>
-
             <div className="flex flex-wrap gap-3 text-xs">
               <select
                 value={filterMethod}
@@ -402,7 +508,6 @@ export default function Dashboard() {
                 <option value="online">Online</option>
                 <option value="cash">Cash</option>
               </select>
-
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -412,14 +517,12 @@ export default function Dashboard() {
                 />
                 <span>Above ₹200</span>
               </label>
-
               <input
                 type="date"
                 value={filterDateFrom}
                 onChange={(e) => setFilterDateFrom(e.target.value)}
                 className="px-3 py-1.5 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
               />
-
               <input
                 type="date"
                 value={filterDateTo}
@@ -427,7 +530,6 @@ export default function Dashboard() {
                 className="px-3 py-1.5 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400"
               />
             </div>
-
             <button
               onClick={() => setShowAllTransactions(!showAllTransactions)}
               className="text-purple-600 hover:underline text-xs font-medium"
