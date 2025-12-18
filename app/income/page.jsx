@@ -1,9 +1,21 @@
 "use client";
+
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { addIncome } from "@/lib/firestore";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import {
+  addIncome,
+  updateTransaction,
+  deleteTransaction,
+} from "@/lib/firestore";
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  serverTimestamp,
+  addDoc,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Sidebar from "@/components/Navbar";
 
@@ -16,14 +28,19 @@ export default function IncomePage() {
   const [incomes, setIncomes] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
+  // Edit modal state
+  const [editingIncome, setEditingIncome] = useState(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+
   useEffect(() => {
     if (!user) {
       router.push("/login");
       return;
     }
 
-    const incomesRef = collection(db, "users", user.uid, "incomes");
-    const q = query(incomesRef, orderBy("timestamp", "desc"));
+    const incomesRef = collection(db, "users", user.uid, "income");
+    const q = query(incomesRef, orderBy("date", "desc"));
 
     const unsubscribe = onSnapshot(
       q,
@@ -31,12 +48,13 @@ export default function IncomePage() {
         const data = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
+          date: doc.data().date?.toDate() || new Date(),
         }));
         setIncomes(data);
         setHistoryLoading(false);
       },
       (error) => {
-        console.error("Error fetching income:", error);
+        console.error("Error fetching incomes:", error);
         setHistoryLoading(false);
       }
     );
@@ -44,7 +62,7 @@ export default function IncomePage() {
     return () => unsubscribe();
   }, [user, router]);
 
-  const handleSubmit = async (e) => {
+  const handleAddIncome = async (e) => {
     e.preventDefault();
     if (!amount || amount <= 0) return;
 
@@ -53,6 +71,7 @@ export default function IncomePage() {
 
     try {
       await addIncome(user.uid, parseFloat(amount));
+
       setMessage("Income added successfully!");
       setAmount("");
       setTimeout(() => setMessage(""), 3000);
@@ -65,9 +84,53 @@ export default function IncomePage() {
     }
   };
 
-  const formatDate = (timestamp) => {
-    if (!timestamp) return "—";
-    return timestamp.toDate().toLocaleDateString("en-IN", {
+  const handleEdit = (income) => {
+    setEditingIncome(income);
+    setEditAmount(income.amount.toString());
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!editAmount || editAmount <= 0) return;
+
+    setEditLoading(true);
+    setMessage("");
+
+    try {
+      await updateTransaction(user.uid, "income", editingIncome.id, {
+        amount: parseFloat(editAmount),
+      });
+
+      setMessage("Income updated successfully!");
+      setEditingIncome(null);
+      setEditAmount("");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      setMessage("Error updating income.");
+      console.error(error);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleDelete = async (incomeId) => {
+    if (!confirm("Are you sure you want to delete this income record?")) return;
+
+    setMessage("");
+
+    try {
+      await deleteTransaction(user.uid, "income", incomeId);
+      setMessage("Income deleted successfully!");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      setMessage("Error deleting income.");
+      console.error(error);
+    }
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "—";
+    return date.toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -81,7 +144,7 @@ export default function IncomePage() {
       <div className="min-h-screen bg-gray-50 flex">
         <Sidebar />
 
-        <div className="flex-1  p-4 md:p-6">
+        <div className="flex-1 p-4 md:p-6">
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
@@ -92,6 +155,7 @@ export default function IncomePage() {
             </p>
           </div>
 
+          {/* Success/Error Message */}
           {message && (
             <div
               className={`mb-5 p-3 rounded-lg text-center text-sm font-medium shadow-sm border ${
@@ -104,8 +168,9 @@ export default function IncomePage() {
             </div>
           )}
 
+          {/* Add Income Form */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-8">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleAddIncome} className="space-y-4">
               <div className="relative">
                 <span className="absolute left-4 top-3.5 text-xl font-bold text-gray-700">
                   ₹
@@ -139,7 +204,7 @@ export default function IncomePage() {
           </h2>
 
           {historyLoading ? (
-            <p className="text-center text-gray-600 py-8">Loading...</p>
+            <p className="text-center text-gray-600 py-8">Loading history...</p>
           ) : incomes.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
               <p className="text-gray-600">No income records yet.</p>
@@ -159,6 +224,9 @@ export default function IncomePage() {
                       <th className="py-3 px-5 font-medium text-gray-700 text-right">
                         Amount
                       </th>
+                      <th className="py-3 px-5 font-medium text-gray-700 text-center">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -168,10 +236,24 @@ export default function IncomePage() {
                         className="border-b border-gray-100 hover:bg-gray-50"
                       >
                         <td className="py-3 px-5 text-gray-800">
-                          {formatDate(income.timestamp)}
+                          {formatDate(income.date)}
                         </td>
                         <td className="py-3 px-5 text-right font-medium text-green-700">
                           ₹{income.amount.toLocaleString("en-IN")}
+                        </td>
+                        <td className="py-3 px-5 text-center">
+                          <button
+                            onClick={() => handleEdit(income)}
+                            className="text-blue-600 hover:text-blue-800 font-medium text-sm mr-4"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(income.id)}
+                            className="text-red-600 hover:text-red-800 font-medium text-sm"
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -181,7 +263,7 @@ export default function IncomePage() {
             </div>
           )}
 
-          {/* Back Button */}
+          {/* Back to Dashboard */}
           <div className="mt-8 text-center">
             <button
               onClick={() => router.push("/dashboard")}
@@ -192,6 +274,54 @@ export default function IncomePage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Income Modal */}
+      {editingIncome && (
+        <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              Edit Income
+            </h3>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div className="relative">
+                <span className="absolute left-4 top-3.5 text-xl font-bold text-gray-700">
+                  ₹
+                </span>
+                <input
+                  type="number"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  required
+                  min="1"
+                  step="0.01"
+                  className="w-full pl-12 pr-4 py-3 text-xl border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-60"
+                >
+                  {editLoading ? "Saving..." : "Save Changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingIncome(null);
+                    setEditAmount("");
+                  }}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2.5 rounded-lg transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
