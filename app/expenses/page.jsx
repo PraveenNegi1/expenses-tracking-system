@@ -68,7 +68,6 @@ export default function ExpensesPage() {
     fetchExpenses();
   }, [user, router]);
 
-  // Check if all required fields are filled
   const isAddFormValid =
     title.trim() !== "" &&
     amount !== "" &&
@@ -89,7 +88,7 @@ export default function ExpensesPage() {
         title: title.trim(),
         category,
         amount: Number(amount),
-        method: paymentMethod, // Save payment method
+        method: paymentMethod,
       });
 
       setMessage("Expense added!");
@@ -245,7 +244,6 @@ export default function ExpensesPage() {
                 ))}
               </select>
 
-              {/* New Payment Method Field */}
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
@@ -269,7 +267,6 @@ export default function ExpensesPage() {
             </form>
           </div>
 
-          {/* Expenses List */}
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             Your Expenses
           </h2>
@@ -321,7 +318,6 @@ export default function ExpensesPage() {
                             ))}
                           </select>
 
-                          {/* Edit Payment Method */}
                           <select
                             value={editPaymentMethod}
                             onChange={(e) =>
@@ -359,7 +355,8 @@ export default function ExpensesPage() {
                               {exp.title}
                             </h3>
                             <p className="text-sm text-gray-600">
-                              {exp.category} • {exp.method || "Card"}
+                              {exp.category}
+                              {exp.method && ` • ${exp.method}`}
                             </p>
                             <p className="text-xl font-bold text-red-600 mt-1">
                               ₹{exp.amount.toLocaleString("en-IN")}
@@ -397,7 +394,6 @@ export default function ExpensesPage() {
             </div>
           )}
 
-          {/* Back Button */}
           <div className="mt-8 text-center">
             <button
               onClick={() => router.push("/dashboard")}
