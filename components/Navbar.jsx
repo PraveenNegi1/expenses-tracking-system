@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
+import { MdDashboardCustomize } from "react-icons/md";
+import { RiMoneyRupeeCircleLine } from "react-icons/ri";
+import { MdOutlineShoppingCartCheckout } from "react-icons/md";
+
+
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
@@ -19,9 +24,10 @@ export default function Sidebar() {
   if (!user) return null;
 
   const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: "📊" },
-    { href: "/income", label: "Add Income", icon: "💰" },
-    { href: "/expenses", label: "Add Expense", icon: "🛒" },
+    { href: "/dashboard", label: "Dashboard", icon: <MdDashboardCustomize /> },
+    { href: "/income", label: "Add Income", icon: <RiMoneyRupeeCircleLine />},
+    { href: "/expenses", label: "Add Expense", icon: <MdOutlineShoppingCartCheckout />
+ },
   ];
 
   const isActive = (href) => pathname === href;
@@ -31,7 +37,7 @@ export default function Sidebar() {
       {/* Mobile Hamburger Button - Smaller & Cleaner */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200"
+        className="lg:hidden fixed top-4 left-4  p-2 bg-white rounded-lg shadow-lg border border-gray-200"
         aria-label="Toggle menu"
       >
         <svg
@@ -68,7 +74,7 @@ export default function Sidebar() {
 
       {/* Sidebar - Slimmer & Compact */}
       <aside
-        className={`bg-white border-r border-gray-200 text-gray-800 w-56 min-h-screen fixed left-0 top-0 flex flex-col transition-transform duration-300 ease-in-out z-40 shadow-lg
+        className={`bg-white border-r border-gray-200 text-gray-800 w-40 min-h-screen fixed left-0 top-0 flex flex-col transition-transform duration-300 ease-in-out  shadow-lg
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0
         `}
@@ -78,7 +84,7 @@ export default function Sidebar() {
           <Link
             href="/dashboard"
             onClick={() => setIsOpen(false)}
-            className="text-xl font-bold text-purple-600"
+            className="text-[16px] font-bold text-gray-800"
           >
             ExpenseTracker
           </Link>
@@ -92,7 +98,7 @@ export default function Sidebar() {
                 <Link
                   href={item.href}
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[12px] font-medium transition-all duration-200
                     ${
                       isActive(item.href)
                         ? "bg-purple-100 text-purple-700 shadow-sm"

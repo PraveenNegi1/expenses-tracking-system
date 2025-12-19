@@ -11,13 +11,27 @@ import {
 import Sidebar from "@/components/Navbar";
 
 const CATEGORIES = [
-  "Food",
-  "Rent",
-  "Travel",
-  "Shopping",
-  "Bills",
-  "Borrow Return",
-  "Other",
+  "Food",             
+  "Groceries",        
+  "Dining Out",       
+  "Rent",             
+  "Travel",          
+  "Transport",        
+  "Shopping",          
+  "Bills",             
+  "Utilities",         
+  "Mobile Recharge",   
+  "Internet/Cable",   
+  "Borrow Return",     
+  "Healthcare",        
+  "Insurance",    
+  "Education",     
+  "Entertainment",   
+  "Personal Care",    
+  "Gifts/Donations",
+  "Home Maintenance", 
+  "EMI/Loans",  
+  "Other", 
 ];
 
 const PAYMENT_METHODS = ["Card", "Online", "Cash"];
