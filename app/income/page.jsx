@@ -145,7 +145,6 @@ export default function IncomePage() {
         <Sidebar />
 
         <div className="flex-1 p-4 md:p-6">
-          {/* Header */}
           <div className="mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
               Add Income
@@ -155,7 +154,6 @@ export default function IncomePage() {
             </p>
           </div>
 
-          {/* Success/Error Message */}
           {message && (
             <div
               className={`mb-5 p-3 rounded-lg text-center text-sm font-medium shadow-sm border ${
@@ -168,7 +166,6 @@ export default function IncomePage() {
             </div>
           )}
 
-          {/* Add Income Form */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-8">
             <form onSubmit={handleAddIncome} className="space-y-4">
               <div className="relative">
@@ -198,7 +195,6 @@ export default function IncomePage() {
             </form>
           </div>
 
-          {/* Income History */}
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             Income History
           </h2>
@@ -263,7 +259,6 @@ export default function IncomePage() {
             </div>
           )}
 
-          {/* Back to Dashboard */}
           <div className="mt-8 text-center">
             <button
               onClick={() => router.push("/dashboard")}
@@ -275,7 +270,6 @@ export default function IncomePage() {
         </div>
       </div>
 
-      {/* Edit Income Modal */}
       {editingIncome && (
         <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
