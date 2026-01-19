@@ -27,13 +27,11 @@ export default function Dashboard() {
   const [selectedYear] = useState(new Date().getFullYear());
   const [showAllTransactions, setShowAllTransactions] = useState(false);
 
-  // Filter states
   const [filterMethod, setFilterMethod] = useState("all");
   const [filterMinAmount, setFilterMinAmount] = useState(false);
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
 
-  // Dropdown state
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
   useEffect(() => {
@@ -229,7 +227,6 @@ export default function Dashboard() {
     );
   }
 
-  // Display name logic
   let displayName = "User";
   if (user?.displayName) displayName = user.displayName.trim();
   else if (user?.email) {
@@ -251,10 +248,8 @@ export default function Dashboard() {
 
   return (
     <div className="flex min-h-screen  bg-gray-50 ">
-      {/* Main Dashboard Content */}
       <div className="flex-1 w-[90vw] ">
         <div className="p-4 md:p-6 lg:p-8   ">
-          {/* Header & Profile */}
           <div className="flex justify-between items-center mb-6">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
@@ -333,7 +328,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Month Selector */}
           <div className="mb-6">
             <select
               value={selectedMonth}
