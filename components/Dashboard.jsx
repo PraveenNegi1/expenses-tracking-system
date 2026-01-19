@@ -250,9 +250,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 ">
+    <div className="flex min-h-screen  bg-gray-50 ">
       {/* Main Dashboard Content */}
-      <div className="flex-1 ">
+      <div className="flex-1 w-[90vw] ">
         <div className="p-4 md:p-6 lg:p-8   ">
           {/* Header & Profile */}
           <div className="flex justify-between items-center mb-6">

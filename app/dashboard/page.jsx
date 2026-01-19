@@ -8,7 +8,7 @@ const page = () => {
       <div className="w-[10%]">
         <Sidebar />
       </div>
-      <div className=" min-h-screen w-[110%] ml-10 flex flex-col">
+      <div className=" min-h-screen w-[110%] flex flex-col">
         <main className="flex-1 p-3">
           <Dashboard />
         </main>
