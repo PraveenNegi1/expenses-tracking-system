@@ -378,9 +378,7 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Money Flow */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
               <h2 className="text-lg font-bold text-gray-800 mb-4">
                 Money Flow (Last 12 Months)
@@ -400,7 +398,6 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
 
-            {/* Budget Breakdown */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
               <h2 className="text-lg font-bold text-gray-800 mb-4">
                 Expense Categories
@@ -438,7 +435,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Monthly Expenses Trend */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-8">
             <h2 className="text-lg font-bold text-gray-800 mb-4">
               Monthly Expenses Trend
@@ -487,7 +483,6 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {/* Recent Transactions */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
               <h2 className="text-lg font-bold text-gray-800">
