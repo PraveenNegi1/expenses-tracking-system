@@ -34,7 +34,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile Hamburger Button - Smaller & Cleaner */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="lg:hidden fixed top-4 left-4  p-2 bg-white rounded-lg shadow-lg border border-gray-200"
