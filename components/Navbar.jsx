@@ -111,7 +111,6 @@ export default function Sidebar() {
           </ul>
         </nav>
 
-        {/* Logout Button - Compact */}
         <div className="p-3 border-t border-gray-200">
           <button
             onClick={handleLogout}
