@@ -78,7 +78,6 @@ export default function Sidebar() {
           lg:translate-x-0
         `}
       >
-        {/* Logo - Compact */}
         <div className="p-4 border-b border-gray-200">
           <Link
             href="/dashboard"
