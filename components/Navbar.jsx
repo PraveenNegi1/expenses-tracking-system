@@ -90,7 +90,6 @@ export default function Sidebar() {
           </Link>
         </div>
 
-        {/* Navigation Links - Tighter Spacing */}
         <nav className="flex-1 p-3">
           <ul className="space-y-1">
             {navItems.map((item) => (
