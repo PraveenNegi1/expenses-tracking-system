@@ -72,7 +72,6 @@ export default function Sidebar() {
         />
       )}
 
-      {/* Sidebar - Slimmer & Compact */}
       <aside
         className={`bg-white border-r border-gray-200 text-gray-800 w-40 min-h-screen fixed left-0 top-0 flex flex-col transition-transform duration-300 ease-in-out  shadow-lg
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
