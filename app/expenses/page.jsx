@@ -27,7 +27,6 @@ const CATEGORIES = [
   "Education",     
   "Entertainment",   
   "Personal Care",    
-  "Gifts",
   "Home Maintenance", 
   "EMI/Loans",  
   "Other", 
