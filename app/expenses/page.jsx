@@ -406,7 +406,7 @@ export default function ExpensesPage() {
                         // Normal View
                         <div className="flex justify-between items-center">
                           <div className="flex gap-4">
-                            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center flex-shrink-0">
+                            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center shrink-0">
                               <IndianRupee className="w-6 h-6 text-red-600" />
                             </div>
                             <div>
