@@ -123,7 +123,6 @@ export default function ExpensesPage() {
   const expenseCount = filteredExpenses.length;
   const avgExpense = expenseCount > 0 ? Math.round(totalSpent / expenseCount) : 0;
 
-  // Add, Update, Delete functions (same as before - kept clean)
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !amount || Number(amount) <= 0) return;
