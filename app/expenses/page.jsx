@@ -454,7 +454,6 @@ export default function ExpensesPage() {
         </div>
       </div>
 
-      {/* Custom Scrollbar Styling */}
       <style jsx global>{`
         .custom-scroll::-webkit-scrollbar {
           width: 6px;
