@@ -205,7 +205,7 @@ export default function ExpensesPage() {
   if (!user) return null;
 
   return (
-    <div className="md:ml-44 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="md:ml-44 min-h-screen bg-linear-to-br from-gray-50 to-gray-100">
       <div className="flex">
         <Sidebar />
 
@@ -301,7 +301,7 @@ export default function ExpensesPage() {
               <button
                 type="submit"
                 disabled={loading || !title.trim() || !amount || Number(amount) <= 0}
-                className="md:col-span-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-semibold py-4 rounded-2xl text-lg transition-all disabled:opacity-70"
+                className="md:col-span-2 bg-linear-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-semibold py-4 rounded-2xl text-lg transition-all disabled:opacity-70"
               >
                 {loading ? "Adding..." : "Add Expense"}
               </button>
