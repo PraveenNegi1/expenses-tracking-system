@@ -344,7 +344,6 @@ export default function ExpensesPage() {
             </select>
           </div>
 
-          {/* SCROLLABLE TRANSACTIONS SECTION */}
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <h2 className="text-2xl font-semibold text-gray-800">Your Transactions</h2>
