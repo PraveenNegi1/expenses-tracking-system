@@ -352,7 +352,7 @@ export default function ExpensesPage() {
             </div>
 
             {/* Scrollable Area */}
-            <div className="max-h-[520px] overflow-y-auto custom-scroll">
+            <div className="max-h-130 overflow-y-auto custom-scroll">
               {fetching ? (
                 <div className="py-20 text-center text-gray-500">Loading your expenses...</div>
               ) : filteredExpenses.length === 0 ? (
