@@ -243,7 +243,6 @@ export default function ExpensesPage() {
             </div>
           </div>
 
-          {/* Add Expense Form */}
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-10">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-red-600 rounded-2xl flex items-center justify-center">
