@@ -304,7 +304,6 @@ export default function ExpensesPage() {
             </form>
           </div>
 
-          {/* Filters */}
           <div className="flex flex-wrap gap-4 mb-6">
             <div className="relative flex-1 min-w-62.5">
               <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
