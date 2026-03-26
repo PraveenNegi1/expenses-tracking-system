@@ -396,7 +396,6 @@ export default function ExpensesPage() {
                           </div>
                         </div>
                       ) : (
-                        // Normal View
                         <div className="flex justify-between items-center">
                           <div className="flex gap-4">
                             <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center shrink-0">
