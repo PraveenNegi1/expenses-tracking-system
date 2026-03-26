@@ -209,7 +209,6 @@ export default function ExpensesPage() {
         <Sidebar />
 
         <div className="flex-1 p-4 md:p-8">
-          {/* Header & Stats (same as before) */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Expenses</h1>
