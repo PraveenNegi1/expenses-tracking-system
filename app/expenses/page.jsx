@@ -228,7 +228,6 @@ export default function ExpensesPage() {
             </div>
           )}
 
-          {/* Quick Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
               <p className="text-sm text-gray-500">Total Spent</p>
