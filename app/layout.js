@@ -12,7 +12,6 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="bg-gray-100 min-h-screen">
         <AuthProvider>
-          {/* <Nav /> */}
           <main className="max-w-6xl mx-auto">{children}</main>
         </AuthProvider>
       </body>
