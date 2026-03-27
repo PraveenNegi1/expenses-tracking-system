@@ -28,7 +28,6 @@ export default function IncomePage() {
   const [incomes, setIncomes] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
-  // Edit modal state
   const [editingIncome, setEditingIncome] = useState(null);
   const [editAmount, setEditAmount] = useState("");
   const [editLoading, setEditLoading] = useState(false);

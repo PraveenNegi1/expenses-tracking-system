@@ -28,7 +28,7 @@ export default function SummaryCard({ title, amount, color, trend = 'neutral' })
   return (
     <div className="w-full max-w-sm mx-auto">
       <div
-        className={`relative overflow-hidden rounded-2xl shadow-xl bg-gradient-to-br ${variant.gradient} text-white p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl backdrop-blur-md border border-white/20`}
+        className={`relative overflow-hidden rounded-2xl shadow-xl bg-linear-to-br ${variant.gradient} text-white p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl backdrop-blur-md border border-white/20`}
       >
         <div className="absolute inset-0 bg-white/10"></div>
 
