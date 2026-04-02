@@ -8,8 +8,6 @@ import { MdDashboardCustomize } from "react-icons/md";
 import { RiMoneyRupeeCircleLine } from "react-icons/ri";
 import { MdOutlineShoppingCartCheckout } from "react-icons/md";
 
-
-
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -25,9 +23,12 @@ export default function Sidebar() {
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: <MdDashboardCustomize /> },
-    { href: "/income", label: "Add Income", icon: <RiMoneyRupeeCircleLine />},
-    { href: "/expenses", label: "Add Expense", icon: <MdOutlineShoppingCartCheckout />
- },
+    { href: "/income", label: "Add Income", icon: <RiMoneyRupeeCircleLine /> },
+    {
+      href: "/expenses",
+      label: "Add Expense",
+      icon: <MdOutlineShoppingCartCheckout />,
+    },
   ];
 
   const isActive = (href) => pathname === href;
